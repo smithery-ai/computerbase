@@ -7,6 +7,7 @@ use rmcp::transport::streamable_http_server::{
     tower::StreamableHttpService,
 };
 use rmcp::transport::StreamableHttpServerConfig;
+use rmcp::model::{CallToolResult, Content};
 use rmcp::{tool, tool_router, ServiceExt};
 use serde::Deserialize;
 use tokio_util::sync::CancellationToken;
@@ -176,17 +177,17 @@ impl ComputerUseMcp {
         Ok((lc.x.round() as i32, lc.y.round() as i32))
     }
 
-    /// Execute a click with optional modifiers.
+    /// Execute a click with optional modifiers. Returns CallToolResult.
     async fn do_click(
         &self,
         coord: CoordPair,
         button: Button,
         count: u32,
         modifiers: Option<String>,
-    ) -> String {
+    ) -> CallToolResult {
         let (x, y) = match self.to_logical_i32(coord) {
             Ok(v) => v,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
 
         let result = if let Some(mods) = modifiers {
@@ -200,10 +201,25 @@ impl ComputerUseMcp {
         };
 
         match result {
-            Ok(()) => format!("clicked ({x}, {y})"),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text(format!("clicked ({x}, {y})")),
+            Err(e) => err_result(&e.to_string()),
         }
     }
+}
+
+/// Create a successful text result.
+fn ok_text(msg: impl Into<String>) -> CallToolResult {
+    CallToolResult::success(vec![Content::text(msg)])
+}
+
+/// Create an error text result (isError: true).
+fn err_result(msg: &str) -> CallToolResult {
+    CallToolResult::error(vec![Content::text(msg)])
+}
+
+/// Create a successful image result with proper MCP ImageContent.
+fn ok_image(base64_data: String) -> CallToolResult {
+    CallToolResult::success(vec![Content::image(base64_data, "image/jpeg")])
 }
 
 // ── Tool implementations ────────────────────────────────────────────
@@ -214,21 +230,11 @@ impl ComputerUseMcp {
         name = "screenshot",
         description = "Take a screenshot of the primary display."
     )]
-    async fn screenshot(&self, Parameters(_p): Parameters<ScreenshotParams>) -> String {
+    async fn screenshot(&self, Parameters(_p): Parameters<ScreenshotParams>) -> CallToolResult {
         match tokio::task::spawn_blocking(capture_screenshot).await {
-            Ok(Ok(result)) => {
-                // Return as MCP image content
-                serde_json::json!({
-                    "type": "image",
-                    "data": result.base64_image,
-                    "mimeType": "image/jpeg",
-                    "width": result.width,
-                    "height": result.height,
-                })
-                .to_string()
-            }
-            Ok(Err(e)) => format!("error: {e}"),
-            Err(e) => format!("error: task join failed: {e}"),
+            Ok(Ok(result)) => ok_image(result.base64_image),
+            Ok(Err(e)) => err_result(&e.to_string()),
+            Err(e) => err_result(&format!("task join failed: {e}")),
         }
     }
 
@@ -236,7 +242,7 @@ impl ComputerUseMcp {
         name = "left_click",
         description = "Left-click at the given coordinates."
     )]
-    async fn left_click(&self, Parameters(p): Parameters<ClickParams>) -> String {
+    async fn left_click(&self, Parameters(p): Parameters<ClickParams>) -> CallToolResult {
         self.do_click(p.coordinate, Button::Left, 1, p.text).await
     }
 
@@ -244,7 +250,7 @@ impl ComputerUseMcp {
         name = "right_click",
         description = "Right-click at the given coordinates."
     )]
-    async fn right_click(&self, Parameters(p): Parameters<ClickParams>) -> String {
+    async fn right_click(&self, Parameters(p): Parameters<ClickParams>) -> CallToolResult {
         self.do_click(p.coordinate, Button::Right, 1, p.text).await
     }
 
@@ -252,7 +258,7 @@ impl ComputerUseMcp {
         name = "middle_click",
         description = "Middle-click at the given coordinates."
     )]
-    async fn middle_click(&self, Parameters(p): Parameters<ClickParams>) -> String {
+    async fn middle_click(&self, Parameters(p): Parameters<ClickParams>) -> CallToolResult {
         self.do_click(p.coordinate, Button::Middle, 1, p.text).await
     }
 
@@ -260,7 +266,7 @@ impl ComputerUseMcp {
         name = "double_click",
         description = "Double-click at the given coordinates."
     )]
-    async fn double_click(&self, Parameters(p): Parameters<ClickParams>) -> String {
+    async fn double_click(&self, Parameters(p): Parameters<ClickParams>) -> CallToolResult {
         self.do_click(p.coordinate, Button::Left, 2, p.text).await
     }
 
@@ -268,7 +274,7 @@ impl ComputerUseMcp {
         name = "triple_click",
         description = "Triple-click at the given coordinates."
     )]
-    async fn triple_click(&self, Parameters(p): Parameters<ClickParams>) -> String {
+    async fn triple_click(&self, Parameters(p): Parameters<ClickParams>) -> CallToolResult {
         self.do_click(p.coordinate, Button::Left, 3, p.text).await
     }
 
@@ -276,10 +282,10 @@ impl ComputerUseMcp {
         name = "left_click_drag",
         description = "Press, move to target, and release."
     )]
-    async fn left_click_drag(&self, Parameters(p): Parameters<DragParams>) -> String {
+    async fn left_click_drag(&self, Parameters(p): Parameters<DragParams>) -> CallToolResult {
         let to = match self.to_logical_i32(p.coordinate) {
             Ok(v) => v,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
         let from = p.start_coordinate.map(|c| match self.to_logical_i32(c) {
             Ok(v) => Ok(v),
@@ -287,12 +293,12 @@ impl ComputerUseMcp {
         });
         let from = match from.transpose() {
             Ok(v) => v,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
 
         match drag(&self.input, from, to).await {
-            Ok(()) => "dragged".to_string(),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text("dragged"),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -300,15 +306,15 @@ impl ComputerUseMcp {
         name = "scroll",
         description = "Scroll at the given coordinates."
     )]
-    async fn scroll(&self, Parameters(p): Parameters<ScrollParams>) -> String {
+    async fn scroll(&self, Parameters(p): Parameters<ScrollParams>) -> CallToolResult {
         let (x, y) = match self.to_logical_i32(p.coordinate) {
             Ok(v) => v,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
 
         match scroll_at(&self.input, x, y, p.scroll_direction, p.scroll_amount).await {
-            Ok(()) => "scrolled".to_string(),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text("scrolled"),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -316,15 +322,15 @@ impl ComputerUseMcp {
         name = "mouse_move",
         description = "Move the mouse cursor without clicking."
     )]
-    async fn mouse_move(&self, Parameters(p): Parameters<MoveParams>) -> String {
+    async fn mouse_move(&self, Parameters(p): Parameters<MoveParams>) -> CallToolResult {
         let (x, y) = match self.to_logical_i32(p.coordinate) {
             Ok(v) => v,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
 
         match move_and_settle(&self.input, x, y).await {
-            Ok(()) => format!("moved to ({x}, {y})"),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text(format!("moved to ({x}, {y})")),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -332,10 +338,10 @@ impl ComputerUseMcp {
         name = "left_mouse_down",
         description = "Press the left mouse button at the current cursor position."
     )]
-    async fn left_mouse_down(&self) -> String {
+    async fn left_mouse_down(&self) -> CallToolResult {
         match mouse_down(&self.input).await {
-            Ok(()) => "mouse down".to_string(),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text("mouse down"),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -343,10 +349,10 @@ impl ComputerUseMcp {
         name = "left_mouse_up",
         description = "Release the left mouse button at the current cursor position."
     )]
-    async fn left_mouse_up(&self) -> String {
+    async fn left_mouse_up(&self) -> CallToolResult {
         match mouse_up(&self.input).await {
-            Ok(()) => "mouse up".to_string(),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text("mouse up"),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -354,10 +360,10 @@ impl ComputerUseMcp {
         name = "cursor_position",
         description = "Get the current mouse cursor position."
     )]
-    async fn cursor_position(&self) -> String {
+    async fn cursor_position(&self) -> CallToolResult {
         match cursor_position(&self.input).await {
-            Ok((x, y)) => format!("({x}, {y})"),
-            Err(e) => format!("error: {e}"),
+            Ok((x, y)) => ok_text(format!("({x}, {y})")),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -365,18 +371,18 @@ impl ComputerUseMcp {
         name = "key",
         description = "Press a key or key combination (e.g. \"return\", \"cmd+a\")."
     )]
-    async fn key(&self, Parameters(p): Parameters<KeyParams>) -> String {
+    async fn key(&self, Parameters(p): Parameters<KeyParams>) -> CallToolResult {
         match press_key_combo(&self.input, &p.text, p.repeat).await {
-            Ok(()) => format!("pressed {}", p.text),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text(format!("pressed {}", p.text)),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
     #[tool(name = "type", description = "Type text into whatever currently has keyboard focus.")]
-    async fn type_text(&self, Parameters(p): Parameters<TypeParams>) -> String {
+    async fn type_text(&self, Parameters(p): Parameters<TypeParams>) -> CallToolResult {
         match type_text(&self.input, &p.text).await {
-            Ok(()) => "typed".to_string(),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text("typed"),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -384,10 +390,10 @@ impl ComputerUseMcp {
         name = "hold_key",
         description = "Press and hold a key for the specified duration, then release."
     )]
-    async fn hold_key(&self, Parameters(p): Parameters<HoldKeyParams>) -> String {
+    async fn hold_key(&self, Parameters(p): Parameters<HoldKeyParams>) -> CallToolResult {
         match hold_key(&self.input, &p.text, p.duration).await {
-            Ok(()) => format!("held {} for {}s", p.text, p.duration),
-            Err(e) => format!("error: {e}"),
+            Ok(()) => ok_text(format!("held {} for {}s", p.text, p.duration)),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -395,11 +401,11 @@ impl ComputerUseMcp {
         name = "read_clipboard",
         description = "Read the current clipboard contents as text."
     )]
-    async fn read_clipboard(&self) -> String {
+    async fn read_clipboard(&self) -> CallToolResult {
         match tokio::task::spawn_blocking(clipboard::read_clipboard).await {
-            Ok(Ok(text)) => text,
-            Ok(Err(e)) => format!("error: {e}"),
-            Err(e) => format!("error: {e}"),
+            Ok(Ok(text)) => ok_text(text),
+            Ok(Err(e)) => err_result(&e.to_string()),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -407,12 +413,12 @@ impl ComputerUseMcp {
         name = "write_clipboard",
         description = "Write text to the clipboard."
     )]
-    async fn write_clipboard(&self, Parameters(p): Parameters<TypeParams>) -> String {
+    async fn write_clipboard(&self, Parameters(p): Parameters<TypeParams>) -> CallToolResult {
         let text = p.text;
         match tokio::task::spawn_blocking(move || clipboard::write_clipboard(&text)).await {
-            Ok(Ok(())) => "clipboard written".to_string(),
-            Ok(Err(e)) => format!("error: {e}"),
-            Err(e) => format!("error: {e}"),
+            Ok(Ok(())) => ok_text("clipboard written"),
+            Ok(Err(e)) => err_result(&e.to_string()),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -420,12 +426,12 @@ impl ComputerUseMcp {
         name = "open_application",
         description = "Bring an application to the front, launching it if necessary."
     )]
-    async fn open_application(&self, Parameters(p): Parameters<OpenAppParams>) -> String {
+    async fn open_application(&self, Parameters(p): Parameters<OpenAppParams>) -> CallToolResult {
         let app = p.app;
         match tokio::task::spawn_blocking(move || apps::open_application(&app)).await {
-            Ok(Ok(())) => "opened".to_string(),
-            Ok(Err(e)) => format!("error: {e}"),
-            Err(e) => format!("error: {e}"),
+            Ok(Ok(())) => ok_text("opened"),
+            Ok(Err(e)) => err_result(&e.to_string()),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -433,31 +439,22 @@ impl ComputerUseMcp {
         name = "wait",
         description = "Wait for a specified duration."
     )]
-    async fn wait(&self, Parameters(p): Parameters<WaitParams>) -> String {
+    async fn wait(&self, Parameters(p): Parameters<WaitParams>) -> CallToolResult {
         let duration = p.duration.clamp(0.0, 100.0);
         tokio::time::sleep(tokio::time::Duration::from_secs_f64(duration)).await;
-        format!("waited {duration}s")
+        ok_text(format!("waited {duration}s"))
     }
 
     #[tool(
         name = "zoom",
         description = "Take a higher-resolution screenshot of a specific region."
     )]
-    async fn zoom(&self, Parameters(p): Parameters<ZoomParams>) -> String {
+    async fn zoom(&self, Parameters(p): Parameters<ZoomParams>) -> CallToolResult {
         let region = p.region;
         match tokio::task::spawn_blocking(move || capture_zoom(&region)).await {
-            Ok(Ok(result)) => {
-                serde_json::json!({
-                    "type": "image",
-                    "data": result.base64_image,
-                    "mimeType": "image/jpeg",
-                    "width": result.width,
-                    "height": result.height,
-                })
-                .to_string()
-            }
-            Ok(Err(e)) => format!("error: {e}"),
-            Err(e) => format!("error: {e}"),
+            Ok(Ok(result)) => ok_image(result.base64_image),
+            Ok(Err(e)) => err_result(&e.to_string()),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 
@@ -465,15 +462,15 @@ impl ComputerUseMcp {
         name = "computer_batch",
         description = "Execute a sequence of actions in one call. Actions execute sequentially and stop on the first error."
     )]
-    async fn computer_batch(&self, Parameters(p): Parameters<BatchParams>) -> String {
+    async fn computer_batch(&self, Parameters(p): Parameters<BatchParams>) -> CallToolResult {
         let (display, target) = match self.get_display_info() {
             Ok(info) => info,
-            Err(e) => return format!("error: {e}"),
+            Err(e) => return err_result(&e),
         };
 
         match batch::execute_batch(p.actions, &self.input, &display, &target).await {
-            Ok(msg) => msg,
-            Err(e) => format!("error: {e}"),
+            Ok(msg) => ok_text(msg),
+            Err(e) => err_result(&e.to_string()),
         }
     }
 }
