@@ -12,13 +12,12 @@ use tracing_subscriber::EnvFilter;
 
 #[tokio::main]
 async fn main() -> Result<(), Box<dyn std::error::Error>> {
-    // Logs go to stderr — stdout is the MCP protocol channel
     tracing_subscriber::fmt()
         .with_env_filter(EnvFilter::from_default_env())
-        .with_writer(std::io::stderr)
         .init();
 
     tracing::info!("computer-use-mcp starting");
 
-    server::run_stdio().await
+    let bind_addr = std::env::args().nth(1);
+    server::run_http(bind_addr.as_deref()).await
 }

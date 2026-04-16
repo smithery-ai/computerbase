@@ -6,7 +6,11 @@ description = "A Rust MCP server for macOS desktop control — screenshots, mous
 
 [dependencies]
 # MCP protocol
-rmcp = { version = "1.4", features = ["server", "transport-io", "macros"] }
+rmcp = { version = "1.4", features = ["server", "transport-io", "transport-streamable-http-server", "macros"] }
+
+# HTTP server
+axum = "0.8"
+tokio-util = { version = "0.7", features = ["rt"] }
 
 # Async runtime
 tokio = { version = "1", features = ["full"] }

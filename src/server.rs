@@ -1,9 +1,15 @@
-use std::sync::Mutex;
+use std::sync::{Arc, Mutex};
 
 use enigo::Button;
 use rmcp::handler::server::wrapper::Parameters;
+use rmcp::transport::streamable_http_server::{
+    session::local::LocalSessionManager,
+    tower::StreamableHttpService,
+};
+use rmcp::transport::StreamableHttpServerConfig;
 use rmcp::{tool, tool_router, ServiceExt};
 use serde::Deserialize;
+use tokio_util::sync::CancellationToken;
 
 use crate::apps;
 use crate::batch;
@@ -472,16 +478,35 @@ impl ComputerUseMcp {
     }
 }
 
-pub async fn run_stdio() -> Result<(), Box<dyn std::error::Error>> {
-    tracing::info!("starting stdio transport");
+const DEFAULT_BIND: &str = "127.0.0.1:3100";
+
+pub async fn run_http(bind_addr: Option<&str>) -> Result<(), Box<dyn std::error::Error>> {
+    let addr = bind_addr.unwrap_or(DEFAULT_BIND);
+    tracing::info!("starting streamable HTTP server on {addr}");
 
     let input = InputHandle::spawn()?;
-    let server = ComputerUseMcp::new(input);
+    let ct = CancellationToken::new();
 
-    let service = server.serve(rmcp::transport::io::stdio()).await?;
+    let service: StreamableHttpService<ComputerUseMcp, LocalSessionManager> =
+        StreamableHttpService::new(
+            move || Ok(ComputerUseMcp::new(input.clone())),
+            Default::default(),
+            StreamableHttpServerConfig::default()
+                .with_cancellation_token(ct.child_token()),
+        );
 
-    service.waiting().await?;
+    let router = axum::Router::new().nest_service("/mcp", service);
+    let listener = tokio::net::TcpListener::bind(addr).await?;
 
-    tracing::info!("server shut down");
+    tracing::info!("listening on http://{addr}/mcp");
+
+    axum::serve(listener, router)
+        .with_graceful_shutdown(async move {
+            tokio::signal::ctrl_c().await.ok();
+            tracing::info!("shutting down");
+            ct.cancel();
+        })
+        .await?;
+
     Ok(())
 }
