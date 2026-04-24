@@ -1,6 +1,12 @@
-# mouseless
+<p align="center">
+  <img src="https://raw.githubusercontent.com/smithery-ai/mouseless/master/assets/mouseless.png" alt="mouseless" width="640">
+</p>
 
-Rust MCP server for macOS desktop control. Screenshots, mouse, keyboard, app management — over Streamable HTTP or stdio.
+<h1 align="center">mouseless</h1>
+
+<p align="center">
+  Rust MCP server for macOS desktop control. Screenshots, mouse, keyboard, app management — over Streamable HTTP or stdio.
+</p>
 
 ## Install
 
