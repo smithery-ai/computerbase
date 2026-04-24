@@ -11,32 +11,32 @@
 ## Quick start
 
 ```bash
-smithery install mouseless
-smithery run mouseless
+curl -fsSL https://raw.githubusercontent.com/smithery-ai/mouseless/master/scripts/install.sh | bash
+mouseless
 ```
 
-`smithery run` opens a stdio MCP session. Point any MCP client (Claude Code, Claude Desktop, Cursor, Continue, …) at it:
+`mouseless` runs in stdio mode by default. Point any MCP client (Claude Code, Claude Desktop, Cursor, Continue, …) at it:
 
 ```json
 {
   "mcpServers": {
     "mouseless": {
-      "command": "smithery",
-      "args": ["run", "mouseless"]
+      "command": "mouseless"
     }
   }
 }
 ```
 
+The install script drops the latest release into `~/.local/bin/mouseless`. Override with `INSTALL_DIR=/usr/local/bin` or pin a version with `VERSION=v0.1.0`.
+
 ## Other install options
 
-### Prebuilt binary
+### Smithery
 
 ```bash
-curl -fsSL https://raw.githubusercontent.com/smithery-ai/mouseless/master/scripts/install.sh | bash
+smithery install mouseless
+smithery run mouseless
 ```
-
-Installs the latest release to `~/.local/bin/mouseless`. Override with `INSTALL_DIR=/usr/local/bin` or pin a version with `VERSION=v0.1.0`.
 
 ### Build from crates.io
 
@@ -64,16 +64,16 @@ mouseless --version
 
 ## MCP client configuration
 
-**stdio (via Smithery):**
-
-```json
-{ "mcpServers": { "mouseless": { "command": "smithery", "args": ["run", "mouseless"] } } }
-```
-
 **stdio (direct binary):**
 
 ```json
 { "mcpServers": { "mouseless": { "command": "mouseless" } } }
+```
+
+**stdio (via Smithery):**
+
+```json
+{ "mcpServers": { "mouseless": { "command": "smithery", "args": ["run", "mouseless"] } } }
 ```
 
 **Streamable HTTP:**
