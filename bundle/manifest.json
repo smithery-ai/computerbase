@@ -1,0 +1,58 @@
+{
+  "manifest_version": "0.3",
+  "name": "mouseless",
+  "display_name": "Mouseless",
+  "version": "__VERSION__",
+  "description": "macOS desktop control over MCP — screenshots, mouse, keyboard, app management.",
+  "long_description": "Mouseless exposes 21 tools for controlling macOS: screenshot the primary display, zoom a region, click/double-click/right-click/drag, scroll, move the cursor, type text, send key combos, read and write the clipboard, launch apps, and dispatch sequences in a single batch call.",
+  "author": {
+    "name": "Smithery",
+    "url": "https://smithery.ai"
+  },
+  "homepage": "https://github.com/smithery-ai/mouseless",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/smithery-ai/mouseless"
+  },
+  "documentation": "https://github.com/smithery-ai/mouseless#readme",
+  "support": "https://github.com/smithery-ai/mouseless/issues",
+  "license": "MIT",
+  "keywords": ["mcp", "macos", "automation", "screenshot", "accessibility", "input"],
+  "icon": "icon.png",
+  "server": {
+    "type": "binary",
+    "entry_point": "server/mouseless",
+    "mcp_config": {
+      "command": "${__dirname}/server/mouseless",
+      "args": ["--stdio"],
+      "env": {}
+    }
+  },
+  "compatibility": {
+    "platforms": ["darwin"]
+  },
+  "tools": [
+    { "name": "screenshot", "description": "Capture the primary display (returns MCP ImageContent)" },
+    { "name": "zoom", "description": "High-res capture of a screen region" },
+    { "name": "left_click", "description": "Left-click with optional modifier keys" },
+    { "name": "right_click", "description": "Right-click with optional modifier keys" },
+    { "name": "middle_click", "description": "Middle-click with optional modifier keys" },
+    { "name": "double_click", "description": "Double-click at coordinates" },
+    { "name": "triple_click", "description": "Triple-click at coordinates" },
+    { "name": "left_click_drag", "description": "Click-drag from start to end with animated move" },
+    { "name": "scroll", "description": "Scroll up/down/left/right at coordinates" },
+    { "name": "mouse_move", "description": "Move cursor without clicking" },
+    { "name": "left_mouse_down", "description": "Press left button (hold)" },
+    { "name": "left_mouse_up", "description": "Release left button" },
+    { "name": "cursor_position", "description": "Get current cursor coordinates" },
+    { "name": "key", "description": "Key combo in xdotool syntax (e.g. cmd+shift+a)" },
+    { "name": "type", "description": "Type text into focused element" },
+    { "name": "hold_key", "description": "Hold a key for N seconds" },
+    { "name": "read_clipboard", "description": "Read clipboard via pbpaste" },
+    { "name": "write_clipboard", "description": "Write clipboard via pbcopy (with read-back verify)" },
+    { "name": "open_application", "description": "Launch or focus an app by name or bundle ID" },
+    { "name": "wait", "description": "Sleep for N seconds" },
+    { "name": "computer_batch", "description": "Execute a sequence of actions in one call" }
+  ],
+  "tools_generated": false
+}

@@ -22,6 +22,10 @@ curl -fsSL https://raw.githubusercontent.com/smithery-ai/mouseless/master/script
 
 Installs the latest release to `~/.local/bin/mouseless`. Override with `INSTALL_DIR=/usr/local/bin` or pin a version with `VERSION=v0.1.0`.
 
+### Claude Desktop (one-click)
+
+Download `mouseless-vX.Y.Z.mcpb` from the [latest release](https://github.com/smithery-ai/mouseless/releases/latest) and drop it into Claude Desktop. The bundle ships a universal macOS binary and a manifest that wires up all 21 tools over stdio.
+
 ## Quick start
 
 ```bash

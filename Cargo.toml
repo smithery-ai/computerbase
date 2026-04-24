@@ -9,7 +9,7 @@ homepage = "https://github.com/smithery-ai/mouseless"
 readme = "README.md"
 keywords = ["mcp", "macos", "automation", "screenshot", "accessibility"]
 categories = ["command-line-utilities", "os::macos-apis"]
-exclude = ["dist/", "scripts/", "target/", "assets/"]
+exclude = ["dist/", "scripts/", "target/", "assets/", "bundle/"]
 
 [dependencies]
 # MCP protocol

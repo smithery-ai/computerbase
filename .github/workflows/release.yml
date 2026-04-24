@@ -41,9 +41,42 @@ jobs:
             mouseless-*.tar.gz
             mouseless-*.sha256
 
+  bundle:
+    name: mcpb bundle
+    needs: build
+    runs-on: macos-26
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/download-artifact@v4
+        with:
+          path: tarballs
+          merge-multiple: true
+      - name: Build universal binary + mcpb
+        run: |
+          TAG=${GITHUB_REF_NAME}
+          VERSION=${TAG#v}
+          mkdir -p work/aarch64 work/x86_64
+          tar -xzf tarballs/mouseless-$TAG-aarch64-apple-darwin.tar.gz -C work/aarch64
+          tar -xzf tarballs/mouseless-$TAG-x86_64-apple-darwin.tar.gz  -C work/x86_64
+          lipo -create -output bundle/server/mouseless work/aarch64/mouseless work/x86_64/mouseless
+          chmod +x bundle/server/mouseless
+          lipo -info bundle/server/mouseless
+          # Substitute version into manifest.
+          sed -i '' "s/__VERSION__/$VERSION/" bundle/manifest.json
+          cat bundle/manifest.json | python3 -m json.tool > /dev/null   # validate JSON
+          # Zip the bundle directory contents as .mcpb
+          (cd bundle && zip -r "../mouseless-$TAG.mcpb" .)
+          shasum -a 256 "mouseless-$TAG.mcpb" > "mouseless-$TAG.mcpb.sha256"
+      - uses: actions/upload-artifact@v4
+        with:
+          name: mcpb
+          path: |
+            mouseless-*.mcpb
+            mouseless-*.mcpb.sha256
+
   release:
     name: github release
-    needs: build
+    needs: [build, bundle]
     runs-on: blacksmith-2vcpu-ubuntu-2404
     steps:
       - uses: actions/download-artifact@v4
@@ -59,6 +92,7 @@ jobs:
         with:
           files: |
             dist/mouseless-*.tar.gz
+            dist/mouseless-*.mcpb
             dist/SHA256SUMS
           generate_release_notes: true
 
