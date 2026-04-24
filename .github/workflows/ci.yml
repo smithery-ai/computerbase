@@ -42,4 +42,4 @@ jobs:
       - run: cargo build --target ${{ matrix.target }} --release
       - name: cargo test
         if: matrix.target == 'aarch64-apple-darwin'
-        run: cargo test --target ${{ matrix.target }} --lib
+        run: cargo test --target ${{ matrix.target }} --bins
