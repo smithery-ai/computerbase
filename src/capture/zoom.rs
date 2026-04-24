@@ -15,8 +15,8 @@ pub fn capture_zoom(region: &RegionRect) -> Result<ScreenshotResult, ToolError> 
         )));
     }
 
-    let display = primary_display()
-        .map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
+    let display =
+        primary_display().map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
 
     // The model's coordinates are in screenshot target space.
     // Convert back to logical display coordinates for xcap.

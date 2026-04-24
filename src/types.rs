@@ -30,7 +30,10 @@ pub struct CoordPair(pub [f64; 2]);
 
 impl From<CoordPair> for ScreenCoord {
     fn from(c: CoordPair) -> Self {
-        ScreenCoord { x: c.0[0], y: c.0[1] }
+        ScreenCoord {
+            x: c.0[0],
+            y: c.0[1],
+        }
     }
 }
 

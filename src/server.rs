@@ -2,14 +2,13 @@ use std::sync::{Arc, Mutex};
 
 use enigo::Button;
 use rmcp::handler::server::wrapper::Parameters;
+use rmcp::model::{CallToolResult, Content};
+use rmcp::transport::StreamableHttpServerConfig;
 use rmcp::transport::stdio;
 use rmcp::transport::streamable_http_server::{
-    session::local::LocalSessionManager,
-    tower::StreamableHttpService,
+    session::local::LocalSessionManager, tower::StreamableHttpService,
 };
-use rmcp::transport::StreamableHttpServerConfig;
-use rmcp::model::{CallToolResult, Content};
-use rmcp::{tool, tool_router, ServiceExt};
+use rmcp::{ServiceExt, tool, tool_router};
 use serde::Deserialize;
 use tokio_util::sync::CancellationToken;
 
@@ -313,10 +312,7 @@ impl ComputerUseMcp {
         }
     }
 
-    #[tool(
-        name = "scroll",
-        description = "Scroll at the given coordinates."
-    )]
+    #[tool(name = "scroll", description = "Scroll at the given coordinates.")]
     #[tracing::instrument(skip_all, fields(coord = ?p.coordinate, dir = ?p.scroll_direction, amount = p.scroll_amount), level = "info")]
     async fn scroll(&self, Parameters(p): Parameters<ScrollParams>) -> CallToolResult {
         let (x, y) = match self.to_logical_i32(p.coordinate) {
@@ -395,7 +391,10 @@ impl ComputerUseMcp {
         }
     }
 
-    #[tool(name = "type", description = "Type text into whatever currently has keyboard focus.")]
+    #[tool(
+        name = "type",
+        description = "Type text into whatever currently has keyboard focus."
+    )]
     #[tracing::instrument(skip_all, fields(len = p.text.len()), level = "info")]
     async fn type_text(&self, Parameters(p): Parameters<TypeParams>) -> CallToolResult {
         match type_text(&self.input, &p.text).await {
@@ -432,10 +431,7 @@ impl ComputerUseMcp {
         }
     }
 
-    #[tool(
-        name = "write_clipboard",
-        description = "Write text to the clipboard."
-    )]
+    #[tool(name = "write_clipboard", description = "Write text to the clipboard.")]
     #[tracing::instrument(skip_all, fields(len = p.text.len()), level = "info")]
     async fn write_clipboard(&self, Parameters(p): Parameters<TypeParams>) -> CallToolResult {
         let text = p.text;
@@ -460,10 +456,7 @@ impl ComputerUseMcp {
         }
     }
 
-    #[tool(
-        name = "wait",
-        description = "Wait for a specified duration."
-    )]
+    #[tool(name = "wait", description = "Wait for a specified duration.")]
     #[tracing::instrument(skip_all, fields(duration = p.duration), level = "info")]
     async fn wait(&self, Parameters(p): Parameters<WaitParams>) -> CallToolResult {
         let duration = p.duration.clamp(0.0, 100.0);
@@ -564,8 +557,7 @@ pub async fn run_http(bind_addr: Option<&str>) -> Result<(), Box<dyn std::error:
                 Ok(ComputerUseMcp::new(input.clone()))
             },
             Default::default(),
-            StreamableHttpServerConfig::default()
-                .with_cancellation_token(ct.child_token()),
+            StreamableHttpServerConfig::default().with_cancellation_token(ct.child_token()),
         );
 
     let router = axum::Router::new()

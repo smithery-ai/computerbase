@@ -1,6 +1,6 @@
 use base64::Engine;
-use image::codecs::jpeg::JpegEncoder;
 use image::DynamicImage;
+use image::codecs::jpeg::JpegEncoder;
 
 use crate::display::geometry::primary_display;
 use crate::display::scaling::compute_target_dims;
@@ -12,8 +12,8 @@ const JPEG_QUALITY: u8 = 75;
 
 /// Capture the primary display and return a JPEG base64-encoded screenshot.
 pub fn capture_screenshot() -> Result<ScreenshotResult, ToolError> {
-    let display = primary_display()
-        .map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
+    let display =
+        primary_display().map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
 
     let monitors = xcap::Monitor::all()
         .map_err(|e| ToolError::ScreenshotFailed(format!("enumerate monitors: {e}")))?;
@@ -36,8 +36,11 @@ pub fn capture_screenshot() -> Result<ScreenshotResult, ToolError> {
 
     // Resize if needed
     let resized = if captured_width != target.width || captured_height != target.height {
-        DynamicImage::ImageRgba8(rgba)
-            .resize_exact(target.width, target.height, image::imageops::FilterType::Lanczos3)
+        DynamicImage::ImageRgba8(rgba).resize_exact(
+            target.width,
+            target.height,
+            image::imageops::FilterType::Lanczos3,
+        )
     } else {
         DynamicImage::ImageRgba8(rgba)
     };
@@ -67,8 +70,8 @@ pub fn capture_region(
     width: u32,
     height: u32,
 ) -> Result<ScreenshotResult, ToolError> {
-    let display = primary_display()
-        .map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
+    let display =
+        primary_display().map_err(|e| ToolError::ScreenshotFailed(format!("display info: {e}")))?;
 
     let monitors = xcap::Monitor::all()
         .map_err(|e| ToolError::ScreenshotFailed(format!("enumerate monitors: {e}")))?;

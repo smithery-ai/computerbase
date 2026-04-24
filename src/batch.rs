@@ -1,13 +1,13 @@
 use enigo::Button;
 
 use crate::capture::screenshot::capture_screenshot;
+use crate::display::scaling::screen_to_logical;
 use crate::error::ToolError;
 use crate::input::drag::drag;
 use crate::input::keyboard::{hold_key, press_key_combo, type_text};
 use crate::input::mouse::{click_at, cursor_position, mouse_down, mouse_up, move_and_settle};
 use crate::input::scroll::scroll_at;
 use crate::input::thread::InputHandle;
-use crate::display::scaling::screen_to_logical;
 use crate::types::{BatchAction, CoordPair, DisplayGeometry, LogicalCoord, TargetDims};
 
 /// Convert a coordinate pair using display info.
@@ -122,11 +122,7 @@ async fn execute_single(
         BatchAction::MouseMove { coordinate } => {
             let lc = convert_coord(coordinate, display, target);
             move_and_settle(input, lc.x.round() as i32, lc.y.round() as i32).await?;
-            Ok(format!(
-                "moved to ({}, {})",
-                lc.x.round(),
-                lc.y.round()
-            ))
+            Ok(format!("moved to ({}, {})", lc.x.round(), lc.y.round()))
         }
         BatchAction::LeftClickDrag {
             coordinate,
@@ -137,12 +133,7 @@ async fn execute_single(
                 let lc = convert_coord(c, display, target);
                 (lc.x.round() as i32, lc.y.round() as i32)
             });
-            drag(
-                input,
-                from,
-                (to.x.round() as i32, to.y.round() as i32),
-            )
-            .await?;
+            drag(input, from, (to.x.round() as i32, to.y.round() as i32)).await?;
             Ok("dragged".to_string())
         }
         BatchAction::Scroll {

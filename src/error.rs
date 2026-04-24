@@ -29,7 +29,10 @@ pub enum ToolError {
     ImageFailed(#[from] image::ImageError),
 
     #[error("batch action {index} failed: {source}")]
-    BatchActionFailed { index: usize, source: Box<ToolError> },
+    BatchActionFailed {
+        index: usize,
+        source: Box<ToolError>,
+    },
 
     #[error("coordinate out of bounds: ({x}, {y})")]
     CoordinateOutOfBounds { x: f64, y: f64 },
