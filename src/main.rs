@@ -83,7 +83,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
 
     match mode {
         Mode::Stdio => {
-            eprintln!("▸ mouseless {VERSION} — stdio mode");
+            eprintln!("▸ mouseless {VERSION} — stdio");
             eprintln!("  listening on stdin/stdout. press ctrl+c to stop.");
             eprintln!(
                 "  needs Accessibility + Screen Recording (System Settings > Privacy & Security)."
@@ -92,7 +92,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
         }
         Mode::Http(addr) => {
             let addr_str = addr.as_deref().unwrap_or(DEFAULT_HTTP_ADDR);
-            eprintln!("▸ mouseless {VERSION} — HTTP mode");
+            eprintln!("▸ mouseless {VERSION} — http");
             eprintln!("  serving MCP at http://{addr_str}/mcp");
             eprintln!("  press ctrl+c to stop.");
             eprintln!(
