@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://raw.githubusercontent.com/smithery-ai/mouseless/master/assets/mouseless.png" alt="mouseless" width="240">
+  <img src="https://raw.githubusercontent.com/smithery-ai/mouseless/master/assets/mouseless.png" alt="mouseless" width="120">
 </p>
 
 <h1 align="center">mouseless</h1>
