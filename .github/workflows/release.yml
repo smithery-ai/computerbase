@@ -10,7 +10,7 @@ permissions:
 jobs:
   build:
     name: build (${{ matrix.target }})
-    runs-on: macos-14
+    runs-on: macos-26
     strategy:
       fail-fast: false
       matrix:
@@ -65,7 +65,7 @@ jobs:
   publish-crate:
     name: cargo publish
     needs: release
-    runs-on: macos-14
+    runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@stable
