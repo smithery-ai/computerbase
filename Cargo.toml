@@ -1,6 +1,6 @@
 [package]
 name = "mouseless"
-version = "0.1.0"
+version = "0.1.1"
 edition = "2024"
 description = "A Rust MCP server for macOS desktop control — screenshots, mouse, keyboard, app management. Supports Streamable HTTP and stdio transports."
 license = "MIT"
