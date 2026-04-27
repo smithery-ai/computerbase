@@ -24,11 +24,10 @@ Set `INSTALL_DIR` or `VERSION` to override the install script's defaults (`~/.lo
 
 ## Other install options
 
-Smithery:
+[Smithery](https://smithery.ai/servers/smithery/mouseless):
 
 ```bash
-smithery install mouseless
-smithery run mouseless
+smithery mcp add smithery/mouseless
 ```
 
 From crates.io:
